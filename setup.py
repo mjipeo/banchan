@@ -26,7 +26,7 @@ with open('README.md', 'r', 'utf-8') as f:
     readme = f.read()
 
 setup(
-    name='requests',
+    name='banchan',
     version=banchan.__version__,
     description='Collection of small Python utilities',
     long_description=readme,
