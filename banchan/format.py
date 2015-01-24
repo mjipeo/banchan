@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from xml.dom import minidom
-import json
+import json_ as json
 
 
 SECOND = 1
