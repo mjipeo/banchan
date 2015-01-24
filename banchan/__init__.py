@@ -1,5 +1,5 @@
 __title__ = 'banchan'
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __author__ = 'Minjong Chung'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2014 Minjong Chung'
