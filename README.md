@@ -10,3 +10,7 @@ Collection of small Python utilities
 - datrie (for `emit`)
 - rtree (for `geo`)
 - dateutil (for `date`)
+
+## References
+
+- https://wiki.python.org/moin/PythonDecoratorLibrary
