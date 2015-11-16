@@ -9,7 +9,8 @@ except ImportError:
     pass
 
 
-recursive_dict = lambda: defaultdict(recursive_dict)
+def recursive_dict():
+    return defaultdict(recursive_dict)
 
 
 class AttributeDict(dict):
@@ -33,6 +34,7 @@ def pick(d, *args):
         keys = keys[0]
     keys = set(keys)
     return dict([(k, v) for k, v in d.iteritems() if k in keys])
+
 
 def updated(*args):
     data = {}
@@ -74,7 +76,7 @@ class MutableHashHeap(object):
             return None, None, None
 
     def has_key(self, key):
-        return self._dict.has_key(key)
+        return key in self._dict
 
     def push(self, key, entry, priority=1):
         e = [priority, key, entry]
@@ -91,7 +93,7 @@ class MutableHashHeap(object):
         heapq.heapify(self._heap)
 
     def push_or_update(self, key, entry, priority):
-        if self.has_key(key):
+        if key in self:
             self.update_priority(key, priority)
         else:
             self.push(key, entry, priority)
