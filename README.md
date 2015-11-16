@@ -14,3 +14,5 @@ Collection of small Python utilities
 ## References
 
 - https://wiki.python.org/moin/PythonDecoratorLibrary
+- http://code.activestate.com/recipes/langs/python/top/
+- http://code.activestate.com/recipes/langs/python/views/
