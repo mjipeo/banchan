@@ -510,3 +510,26 @@ def cd(target_dir):
         yield
     finally:
         os.chdir(cwd)
+
+
+def unfrackpath(path):
+    '''
+    returns a path that is free of symlinks, environment
+    variables, relative path traversals and symbols (~)
+    example:
+    '$HOME/../../var/mail' becomes '/var/spool/mail'
+    '''
+    return os.path.normpath(os.path.realpath(os.path.expandvars(os.path.expanduser(path))))
+
+
+def makedirs_safe(path, mode=None):
+    '''Safe way to create dirs in muliprocess/thread environments'''
+    if not os.path.exists(path):
+        try:
+            if mode:
+                os.makedirs(path, mode)
+            else:
+                os.makedirs(path)
+        except OSError as e:
+            if e.errno != EEXIST:
+                raise
