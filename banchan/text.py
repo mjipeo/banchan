@@ -724,3 +724,17 @@ def get_encodings_from_content(content):
             pragma_re.findall(content) +
             xml_re.findall(content))
 
+
+def force_decode(string, encoding):
+    """Forcibly get a unicode string out of a bytestring."""
+    if isinstance(string, binary_type):
+        try:
+            if encoding:
+                string = string.decode(encoding)
+            else:
+                # try decoding with utf-8, should only work for real UTF-8
+                string = string.decode('utf-8')
+        except UnicodeError:
+            # last resort -- can't fail
+            string = string.decode('latin1')
+    return string

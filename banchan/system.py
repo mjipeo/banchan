@@ -170,36 +170,6 @@ def emergency_dump_state(state, open_file=open, dump=None, stderr=None):
     return persist
 
 
-def get_terminal_size():
-    """Returns a tuple (x, y) representing the width(x) and the height(x)
-    in characters of the terminal window."""
-    def ioctl_GWINSZ(fd):
-        try:
-            import fcntl
-            import termios
-            import struct
-            cr = struct.unpack(
-                'hh',
-                fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234')
-            )
-        except:
-            return None
-        if cr == (0, 0):
-            return None
-        return cr
-    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
-    if not cr:
-        try:
-            fd = os.open(os.ctermid(), os.O_RDONLY)
-            cr = ioctl_GWINSZ(fd)
-            os.close(fd)
-        except:
-            pass
-    if not cr:
-        cr = (os.environ.get('LINES', 25), os.environ.get('COLUMNS', 80))
-    return int(cr[1]), int(cr[0])
-
-
 def get_filesystem_encoding():
     """
     Returns the filesystem encoding that should be used. Note that this is
