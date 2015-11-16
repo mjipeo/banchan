@@ -16,4 +16,4 @@ Collection of small Python utilities
 - https://wiki.python.org/moin/PythonDecoratorLibrary
 - http://code.activestate.com/recipes/langs/python/top/
 - http://code.activestate.com/recipes/langs/python/views/
-- https://gist.github.com/search?utf8=%E2%9C%93&q=python+stars%3A%3E10&ref=searchresults
+- https://gist.github.com/search?utf8=%E2%9C%93&q=language%3Apython+stars%3A%3E10&ref=searchresults

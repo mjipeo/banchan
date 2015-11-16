@@ -64,6 +64,73 @@ def cached(timeout):
 # memoized is similar to cached but timeout is none
 memoized = functools.partial(cached, timeout=None)
 
+def memoize(maxsize=None, Cache=LRUCache):
+
+    def _memoize(fun):
+        mutex = threading.Lock()
+        cache = Cache(limit=maxsize)
+
+        @wraps(fun)
+        def _M(*args, **kwargs):
+            key = args + (KEYWORD_MARK,) + tuple(sorted(kwargs.items()))
+            try:
+                with mutex:
+                    value = cache[key]
+            except KeyError:
+                value = fun(*args, **kwargs)
+                _M.misses += 1
+                with mutex:
+                    cache[key] = value
+            else:
+                _M.hits += 1
+            return value
+
+        def clear():
+            """Clear the cache and reset cache statistics."""
+            cache.clear()
+            _M.hits = _M.misses = 0
+
+        _M.hits = _M.misses = 0
+        _M.clear = clear
+        _M.original_func = fun
+        return _M
+
+    return _memoize
+
+
+def memoize(maxsize=None, keyfun=None, Cache=LRUCache):
+
+    def _memoize(fun):
+        cache = Cache(limit=maxsize)
+
+        @wraps(fun)
+        def _M(*args, **kwargs):
+            if keyfun:
+                key = keyfun(args, kwargs)
+            else:
+                key = args + (KEYWORD_MARK,) + tuple(sorted(kwargs.items()))
+            try:
+                value = cache[key]
+            except KeyError:
+                value = fun(*args, **kwargs)
+                _M.misses += 1
+                cache[key] = value
+            else:
+                _M.hits += 1
+            return value
+
+        def clear():
+            """Clear the cache and reset cache statistics."""
+            cache.clear()
+            _M.hits = _M.misses = 0
+
+        _M.hits = _M.misses = 0
+        _M.clear = clear
+        _M.original_func = fun
+        return _M
+
+    return _memoize
+
 
 class LRUCache(dict):
     """A dictionary-like object that stores only a certain number of items, and
