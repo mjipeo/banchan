@@ -100,6 +100,23 @@ def updated(*args):
     return data
 
 
+def without(d, *args):
+    keys = args
+    if len(keys) == 1 and isinstance(keys[0], (list, tuple)):
+        keys = keys[0]
+    keys = set(keys)
+    return dict([(k, v) for k, v in d.iteritems() if k not in keys])
+
+
+def remove(d, *args):
+    keys = args
+    if len(keys) == 1 and isinstance(keys[0], (list, tuple)):
+        keys = keys[0]
+    for k in keys:
+        d.pop(k, None)
+
+
+
 # Computation
 # -----------
 

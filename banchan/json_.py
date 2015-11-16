@@ -73,3 +73,13 @@ class JSONEncoder(json.JSONEncoder):
         elif hasattr(obj, '__iter__'):
             return tuple(item for item in obj)
         return super(JSONEncoder, self).default(obj)
+
+
+def compact(data):
+    compacted = {}
+    for key, value in data.iteritems():
+        if isinstance(value, dict):
+            compacted[key] = compact(value)
+        elif not (value is None or value == ''):
+            compacted[key] = value
+    return compacted

@@ -1,6 +1,15 @@
 import collections
 
 
+def strip_tags(s):
+    return re.sub(r'<[^>]*?>', '', s)
+
+
+def extract_urls(s):
+    return re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%['
+                      r'0-9a-fA-F][0-9a-fA-F]))+', s)
+
+
 def convert_to_byte(data, encoding='utf-8'):
     if isinstance(data, basestring):
         return data.encode(encoding) if isinstance(data, unicode) else \
