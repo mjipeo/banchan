@@ -54,3 +54,15 @@ def absolutify(url, host, scheme='http'):
 
 def ensure_protocol(url, default='http'):
     return urlparse.urljoin('{0}://'.format(default), url)
+
+
+def replace_query_param(url, key, val):
+    """
+    Given a URL and a key/val pair, set or replace an item in the query
+    parameters of the URL, and return the new URL.
+    """
+    (scheme, netloc, path, query, fragment) = urlparse.urlsplit(url)
+    query_dict = urlparse.parse_qs(query)
+    query_dict[key] = [val]
+    query = urlparse.urlencode(sorted(list(query_dict.items())), doseq=True)
+    return urlparse.urlunsplit((scheme, netloc, path, query, fragment))

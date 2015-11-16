@@ -29,3 +29,25 @@ def pythonify(params):
     python models.
     """
     return dict([(hyphen_to_underscore(k), v) for k, v in params.iteritems()])
+
+
+_first_cap_regex = re.compile('(.)([A-Z][a-z]+)')
+_number_cap_regex = re.compile('([a-z])([0-9]+)')
+_end_cap_regex = re.compile('([a-z0-9])([A-Z])')
+
+def pythonize_name(name):
+    """Convert camel case to a "pythonic" name.
+
+    Examples::
+
+        pythonize_name('CamelCase') -> 'camel_case'
+        pythonize_name('already_pythonized') -> 'already_pythonized'
+        pythonize_name('HTTPRequest') -> 'http_request'
+        pythonize_name('HTTPStatus200Ok') -> 'http_status_200_ok'
+        pythonize_name('UPPER') -> 'upper'
+        pythonize_name('') -> ''
+
+    """
+    s1 = _first_cap_regex.sub(r'\1_\2', name)
+    s2 = _number_cap_regex.sub(r'\1_\2', s1)
+    return _end_cap_regex.sub(r'\1_\2', s2).lower()

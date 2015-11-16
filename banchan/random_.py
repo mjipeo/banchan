@@ -126,6 +126,12 @@ def _random_seed():
     except OSError:
         pass
 
+def seed():
+    try:
+        random.seed(os.urandom(64))
+    except NotImplementedError:
+        random.seed('%s.%s' % (time.time(), os.getpid()))
+
 def random_hash():
     return sha1(os.urandom(100))
 
