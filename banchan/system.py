@@ -194,3 +194,208 @@ def get_filesystem_encoding():
             _warned_about_filesystem_encoding = True
         return 'utf-8'
     return rv
+
+
+def gen_unique_id():
+    """Generate a unique id, having - hopefully - a very small chance of
+    collission.
+    For now this is provided by :func:`uuid.uuid4`.
+    """
+    # Workaround for http://bugs.python.org/issue4607
+    if ctypes and _uuid_generate_random:
+        buffer = ctypes.create_string_buffer(16)
+        _uuid_generate_random(buffer)
+        return str(UUID(bytes=buffer.raw))
+    return str(uuid4())
+
+
+##
+
+
+def get_platform():
+    ''' what's the platform?  example: Linux is a platform. '''
+    return platform.system()
+
+def get_distribution():
+    ''' return the distribution name '''
+    if platform.system() == 'Linux':
+        try:
+            supported_dists = platform._supported_dists + ('arch',)
+            distribution = platform.linux_distribution(supported_dists=supported_dists)[0].capitalize()
+            if not distribution and os.path.isfile('/etc/system-release'):
+                distribution = platform.linux_distribution(supported_dists=['system'])[0].capitalize()
+                if 'Amazon' in distribution:
+                    distribution = 'Amazon'
+                else:
+                    distribution = 'OtherLinux'
+        except:
+            # FIXME: MethodMissing, I assume?
+            distribution = platform.dist()[0].capitalize()
+    else:
+        distribution = None
+    return distribution
+
+def get_distribution_version():
+    ''' return the distribution version '''
+    if platform.system() == 'Linux':
+        try:
+            distribution_version = platform.linux_distribution()[1]
+            if not distribution_version and os.path.isfile('/etc/system-release'):
+                distribution_version = platform.linux_distribution(supported_dists=['system'])[1]
+        except:
+            # FIXME: MethodMissing, I assume?
+            distribution_version = platform.dist()[1]
+    else:
+        distribution_version = None
+    return distribution_version
+
+def load_platform_subclass(cls, *args, **kwargs):
+    '''
+    used by modules like User to have different implementations based on detected platform.  See User
+    module for an example.
+    '''
+
+    this_platform = get_platform()
+    distribution = get_distribution()
+    subclass = None
+
+    # get the most specific superclass for this platform
+    if distribution is not None:
+        for sc in cls.__subclasses__():
+            if sc.distribution is not None and sc.distribution == distribution and sc.platform == this_platform:
+                subclass = sc
+    if subclass is None:
+        for sc in cls.__subclasses__():
+            if sc.platform == this_platform and sc.distribution is None:
+                subclass = sc
+    if subclass is None:
+        subclass = cls
+
+    return super(cls, subclass).__new__(subclass)
+
+
+##
+
+
+class Signals(object):
+    """Convenience interface to :mod:`signals`.
+
+    If the requested signal is not supported on the current platform,
+    the operation will be ignored.
+
+    **Examples**:
+
+    .. code-block:: pycon
+
+        >>> from celery.platforms import signals
+
+        >>> from proj.handlers import my_handler
+        >>> signals['INT'] = my_handler
+
+        >>> signals['INT']
+        my_handler
+
+        >>> signals.supported('INT')
+        True
+
+        >>> signals.signum('INT')
+        2
+
+        >>> signals.ignore('USR1')
+        >>> signals['USR1'] == signals.ignored
+        True
+
+        >>> signals.reset('USR1')
+        >>> signals['USR1'] == signals.default
+        True
+
+        >>> from proj.handlers import exit_handler, hup_handler
+        >>> signals.update(INT=exit_handler,
+        ...                TERM=exit_handler,
+        ...                HUP=hup_handler)
+
+    """
+
+    ignored = _signal.SIG_IGN
+    default = _signal.SIG_DFL
+
+    if hasattr(_signal, 'setitimer'):
+
+        def arm_alarm(self, seconds):
+            _signal.setitimer(_signal.ITIMER_REAL, seconds)
+    else:  # pragma: no cover
+        try:
+            from itimer import alarm as _itimer_alarm  # noqa
+        except ImportError:
+
+            def arm_alarm(self, seconds):  # noqa
+                _signal.alarm(math.ceil(seconds))
+        else:  # pragma: no cover
+
+            def arm_alarm(self, seconds):      # noqa
+                return _itimer_alarm(seconds)  # noqa
+
+    def reset_alarm(self):
+        return _signal.alarm(0)
+
+    def supported(self, signal_name):
+        """Return true value if ``signal_name`` exists on this platform."""
+        try:
+            return self.signum(signal_name)
+        except AttributeError:
+            pass
+
+    def signum(self, signal_name):
+        """Get signal number from signal name."""
+        if isinstance(signal_name, numbers.Integral):
+            return signal_name
+        if not isinstance(signal_name, string_t) \
+                or not signal_name.isupper():
+            raise TypeError('signal name must be uppercase string.')
+        if not signal_name.startswith('SIG'):
+            signal_name = 'SIG' + signal_name
+        return getattr(_signal, signal_name)
+
+    def reset(self, *signal_names):
+        """Reset signals to the default signal handler.
+
+        Does nothing if the platform doesn't support signals,
+        or the specified signal in particular.
+
+        """
+        self.update((sig, self.default) for sig in signal_names)
+
+    def ignore(self, *signal_names):
+        """Ignore signal using :const:`SIG_IGN`.
+
+        Does nothing if the platform doesn't support signals,
+        or the specified signal in particular.
+
+        """
+        self.update((sig, self.ignored) for sig in signal_names)
+
+    def __getitem__(self, signal_name):
+        return _signal.getsignal(self.signum(signal_name))
+
+    def __setitem__(self, signal_name, handler):
+        """Install signal handler.
+
+        Does nothing if the current platform doesn't support signals,
+        or the specified signal in particular.
+
+        """
+        try:
+            _signal.signal(self.signum(signal_name), handler)
+        except (AttributeError, ValueError):
+            pass
+
+    def update(self, _d_=None, **sigmap):
+        """Set signal handlers from a mapping."""
+        for signal_name, handler in items(dict(_d_ or {}, **sigmap)):
+            self[signal_name] = handler
+
+signals = Signals()
+get_signal = signals.signum                   # compat
+install_signal_handler = signals.__setitem__  # compat
+reset_signal = signals.reset                  # compat
+ignore_signal = signals.ignore                # compat

@@ -2,6 +2,11 @@
 
 Collection of small Python utilities
 
+## Examples
+
+- Celery's `signal` utility is cloned from Django's `dispatch` module
+- Decorators such as `cached_property`, `memoized` are everywhere
+
 ## Dependencies
 
 - Pillow (for `image`)

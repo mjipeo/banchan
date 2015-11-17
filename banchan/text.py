@@ -22,6 +22,44 @@ def convert_to_byte(data, encoding='utf-8'):
         return data
 
 
+def json_dict_unicode_to_bytes(d, encoding='utf-8'):
+    ''' Recursively convert dict keys and values to byte str
+
+        Specialized for json return because this only handles, lists, tuples,
+        and dict container types (the containers that the json module returns)
+    '''
+
+    if isinstance(d, unicode):
+        return d.encode(encoding)
+    elif isinstance(d, dict):
+        return dict(imap(json_dict_unicode_to_bytes, iteritems(d), repeat(encoding)))
+    elif isinstance(d, list):
+        return list(imap(json_dict_unicode_to_bytes, d, repeat(encoding)))
+    elif isinstance(d, tuple):
+        return tuple(imap(json_dict_unicode_to_bytes, d, repeat(encoding)))
+    else:
+        return d
+
+def json_dict_bytes_to_unicode(d, encoding='utf-8'):
+    ''' Recursively convert dict keys and values to byte str
+
+        Specialized for json return because this only handles, lists, tuples,
+        and dict container types (the containers that the json module returns)
+    '''
+
+    if isinstance(d, bytes):
+        return unicode(d, encoding)
+    elif isinstance(d, dict):
+        return dict(imap(json_dict_bytes_to_unicode, iteritems(d), repeat(encoding)))
+    elif isinstance(d, list):
+        return list(imap(json_dict_bytes_to_unicode, d, repeat(encoding)))
+    elif isinstance(d, tuple):
+        return tuple(imap(json_dict_bytes_to_unicode, d, repeat(encoding)))
+    else:
+        return d
+
+
+
 def truncate(value, size=80):
     return value[:size]
 
@@ -1037,3 +1075,64 @@ if PY3:
     to_str = to_unicode
 else:
     to_str = to_bytes
+
+
+def do_title(s):
+    """Return a titlecased version of the value. I.e. words will start with
+    uppercase letters, all remaining characters are lowercase.
+    """
+    rv = []
+    for item in re.compile(r'([-\s]+)(?u)').split(soft_unicode(s)):
+        if not item:
+            continue
+        rv.append(item[0].upper() + item[1:].lower())
+    return ''.join(rv)
+
+
+def do_truncate(s, length=255, killwords=False, end='...'):
+    """Return a truncated copy of the string. The length is specified
+    with the first parameter which defaults to ``255``. If the second
+    parameter is ``true`` the filter will cut the text at length. Otherwise
+    it will discard the last word. If the text was in fact
+    truncated it will append an ellipsis sign (``"..."``). If you want a
+    different ellipsis sign than ``"..."`` you can specify it using the
+    third parameter.
+
+    .. sourcecode:: jinja
+
+        {{ "foo bar baz"|truncate(9) }}
+            -> "foo ..."
+        {{ "foo bar baz"|truncate(9, True) }}
+            -> "foo ba..."
+
+    """
+    if len(s) <= length:
+        return s
+    elif killwords:
+        return s[:length - len(end)] + end
+
+    result = s[:length - len(end)].rsplit(' ', 1)[0]
+    if len(result) < length:
+        result += ' '
+    return result + end
+
+
+def do_wordwrap(environment, s, width=79, break_long_words=True,
+                wrapstring=None):
+    """
+    Return a copy of the string passed to the filter wrapped after
+    ``79`` characters.  You can override this default using the first
+    parameter.  If you set the second parameter to `false` Jinja will not
+    split words apart if they are longer than `width`. By default, the newlines
+    will be the default newlines for the environment, but this can be changed
+    using the wrapstring keyword argument.
+
+    .. versionadded:: 2.7
+       Added support for the `wrapstring` parameter.
+    """
+    if not wrapstring:
+        wrapstring = environment.newline_sequence
+    import textwrap
+    return wrapstring.join(textwrap.wrap(s, width=width, expand_tabs=False,
+                                   replace_whitespace=False,
+                                   break_long_words=break_long_words))

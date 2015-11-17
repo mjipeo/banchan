@@ -1443,3 +1443,118 @@ class OrderedMultiDict(MultiDict):
         for bucket in buckets:
             bucket.unlink(self)
         return key, [x.value for x in buckets]
+
+
+##
+
+
+def return_values(obj):
+    """ Return stringified values from datastructures. For use with removing
+    sensitive values pre-jsonification."""
+    if isinstance(obj, basestring):
+        if obj:
+            yield obj
+        return
+    elif isinstance(obj, Sequence):
+        for element in obj:
+            for subelement in return_values(element):
+                yield subelement
+    elif isinstance(obj, Mapping):
+        for element in obj.items():
+            for subelement in return_values(element[1]):
+                yield subelement
+    elif isinstance(obj, (bool, NoneType)):
+        # This must come before int because bools are also ints
+        return
+    elif isinstance(obj, NUMBERTYPES):
+        yield str(obj)
+    else:
+        raise TypeError('Unknown parameter type: %s, %s' % (type(obj), obj))
+
+def remove_values(value, no_log_strings):
+    """ Remove strings in no_log_strings from value.  If value is a container
+    type, then remove a lot more"""
+    if isinstance(value, basestring):
+        if value in no_log_strings:
+            return 'VALUE_SPECIFIED_IN_NO_LOG_PARAMETER'
+        for omit_me in no_log_strings:
+            value = value.replace(omit_me, '*' * 8)
+    elif isinstance(value, Sequence):
+        return [remove_values(elem, no_log_strings) for elem in value]
+    elif isinstance(value, Mapping):
+        return dict((k, remove_values(v, no_log_strings)) for k, v in value.items())
+    elif isinstance(value, tuple(chain(NUMBERTYPES, (bool, NoneType)))):
+        stringy_value = str(value)
+        if stringy_value in no_log_strings:
+            return 'VALUE_SPECIFIED_IN_NO_LOG_PARAMETER'
+        for omit_me in no_log_strings:
+            if omit_me in stringy_value:
+                return 'VALUE_SPECIFIED_IN_NO_LOG_PARAMETER'
+    else:
+        raise TypeError('Value of unknown type: %s, %s' % (type(value), value))
+    return value
+
+
+class SyncDict(object):
+    """
+    An efficient/threadsafe singleton map algorithm, a.k.a.
+    "get a value based on this key, and create if not found or not
+    valid" paradigm:
+
+        exists && isvalid ? get : create
+
+    Designed to work with weakref dictionaries to expect items
+    to asynchronously disappear from the dictionary.
+
+    Use python 2.3.3 or greater !  a major bug was just fixed in Nov.
+    2003 that was driving me nuts with garbage collection/weakrefs in
+    this section.
+
+    """
+    def __init__(self):
+        self.mutex = _threading.Lock()
+        self.dict = {}
+
+    def get(self, key, createfunc, *args, **kwargs):
+        try:
+            if key in self.dict:
+                return self.dict[key]
+            else:
+                return self.sync_get(key, createfunc, *args, **kwargs)
+        except KeyError:
+            return self.sync_get(key, createfunc, *args, **kwargs)
+
+    def sync_get(self, key, createfunc, *args, **kwargs):
+        self.mutex.acquire()
+        try:
+            try:
+                if key in self.dict:
+                    return self.dict[key]
+                else:
+                    return self._create(key, createfunc, *args, **kwargs)
+            except KeyError:
+                return self._create(key, createfunc, *args, **kwargs)
+        finally:
+            self.mutex.release()
+
+    def _create(self, key, createfunc, *args, **kwargs):
+        self[key] = obj = createfunc(*args, **kwargs)
+        return obj
+
+    def has_key(self, key):
+        return key in self.dict
+
+    def __contains__(self, key):
+        return self.dict.__contains__(key)
+
+    def __getitem__(self, key):
+        return self.dict.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self.dict.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return self.dict.__delitem__(key)
+
+    def clear(self):
+        self.dict.clear()
