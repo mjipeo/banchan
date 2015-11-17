@@ -23,6 +23,22 @@ class AttributeDict(dict):
             raise AttributeError
 
 
+class _AttributeString(str):
+    """
+    Simple string subclass to allow arbitrary attribute access.
+    """
+    @property
+    def stdout(self):
+        return str(self)
+
+
+class _AttributeList(list):
+    """
+    Like _AttributeString, but for lists.
+    """
+    pass
+
+
 class _AliasDict(_AttributeDict):
     """
     `_AttributeDict` subclass that allows for "aliasing" of keys to other keys.
