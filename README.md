@@ -4,6 +4,7 @@ Collection of small Python utilities
 
 ## Examples
 
+- Zen of Python: If there is really "only one, preferable" way.
 - Celery's `signal` utility is cloned from Django's `dispatch` module
 - Decorators such as `cached_property`, `memoized` are everywhere
 
