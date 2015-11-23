@@ -2,6 +2,10 @@
 
 Collection of small Python utilities
 
+## TODO
+
+- Distribution (https://python-packaging-user-guide.readthedocs.org/en/latest/distributing/)
+
 ## Examples
 
 - Zen of Python: If there is really "only one, preferable" way.
