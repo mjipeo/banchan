@@ -4,6 +4,7 @@ Collection of small Python utilities
 
 ## TODO
 
+- Crypto (https://github.com/andrewcooke/simple-crypt/blob/master/src/simplecrypt/__init__.py)
 - Distribution (https://python-packaging-user-guide.readthedocs.org/en/latest/distributing/)
 
 ## Examples
